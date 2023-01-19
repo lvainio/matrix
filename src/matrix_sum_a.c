@@ -7,7 +7,7 @@
     and prints the total sum to the standard output
 
   usage under Linux:
-    gcc -o sum matrix_sum.c -lpthread
+    gcc -o sum matrix_sum_a.c -lpthread
     ./sum <size> <num_workers>
 */
 
@@ -69,14 +69,14 @@ double start_time;
 double end_time;
 int size;   // assume size is multiple of numWorkers
 int strip_size;  
-int part_sums[MAX_WORKERS];     // partial sums 
+long part_sums[MAX_WORKERS];     // partial sums 
 Elem part_max[MAX_WORKERS];     // partial max
 Elem part_min[MAX_WORKERS];     // partial min
 int matrix[MAX_SIZE][MAX_SIZE]; 
 
 // Each worker sums the values in one strip of the matrix.
 // After barrier, worker(0) computes and prints the total.
-void *Worker(void *arg) {
+void *worker(void *arg) {
   long id = (long) arg;
   
   // determine first and last rows of my strip
@@ -111,12 +111,12 @@ void *Worker(void *arg) {
 
   // check final result
   if (id == 0) {
-    int final_total = 0;
+    long final_total = 0;
     Elem final_min = {-1, -1, INT_MAX};
     Elem final_max = {-1, -1, INT_MIN};
 
     for (int i = 0; i < num_workers; i++) {
-      total += part_sums[i];
+      final_total += part_sums[i];
       if (part_min[i].value < final_min.value) {
         final_min = part_min[i];
       }
@@ -127,7 +127,7 @@ void *Worker(void *arg) {
       
     // print result
     end_time = read_timer();
-    printf("The total sum is: %ld\n", total);
+    printf("The total sum is: %ld\n", final_total);
     printf("The min value is: %d and its position is (%d, %d) \n", final_min.value, final_min.row, final_min.col);
     printf("The max value is: %d and its position is (%d, %d) \n", final_max.value, final_max.row, final_max.col);
     printf("The execution time is %g sec\n", end_time - start_time);
@@ -137,7 +137,7 @@ void *Worker(void *arg) {
 // read command line, initialize, and create threads
 int main(int argc, char *argv[]) {
   pthread_attr_t attr;
-  pthread_t worker_id[MAX_WORKERS];
+  pthread_t threads[MAX_WORKERS];
 
   // set global thread attributes
   pthread_attr_init(&attr);
@@ -169,7 +169,10 @@ int main(int argc, char *argv[]) {
   // create workers
   start_time = read_timer();
   for (long id = 0; id < num_workers; id++) {
-    pthread_create(&worker_id[id], &attr, Worker, (void *) id);
+    if(pthread_create(&threads[id], &attr, worker, (void *) id) != 0) {
+      fprintf(stderr, "Creating thread failed");
+      return 1;
+    }
   }
   pthread_exit(NULL);
 }
