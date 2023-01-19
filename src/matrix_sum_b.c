@@ -140,5 +140,9 @@ int main(int argc, char *argv[]) {
     printf("The max value is: %d and its position is (%d, %d) \n", final_res.max_value, final_res.max_row, final_res.max_col);
     printf("The execution time is: %g sec\n", end_time - start_time);
 
+    for(int i = 0; i < num_workers; i++) {
+        free(res[i]);
+    }
+
     return 0;
 }
