@@ -11,6 +11,8 @@
     a.out size numWorkers
 */
 
+// TODO: calc max and min in partial worker threads and then let main thread decide the total max min. 
+
 #ifndef _REENTRANT 
 #define _REENTRANT 
 #endif 
@@ -22,8 +24,8 @@
 #include <time.h>
 #include <sys/time.h>
 
-#define MAXSIZE 10000     /* maximum matrix size */
-#define MAXWORKERS 10     /* maximum number of workers */
+#define MAX_SIZE 10000     // maximum matrix size
+#define MAX_WORKERS 10     // maximum number of workers
 
 pthread_mutex_t barrier;  /* mutex lock for the barrier */
 pthread_cond_t go;        /* condition variable for leaving */
@@ -58,8 +60,8 @@ double read_timer() {
 
 double start_time, end_time; /* start and end times */
 int size, stripSize;  /* assume size is multiple of numWorkers */
-int sums[MAXWORKERS]; /* partial sums */
-int matrix[MAXSIZE][MAXSIZE]; /* matrix */
+int sums[MAX_WORKERS]; /* partial sums */
+int matrix[MAX_SIZE][MAX_SIZE]; /* matrix */
 
 void *Worker(void *);
 
@@ -68,7 +70,7 @@ int main(int argc, char *argv[]) {
   int i, j;
   long l; /* use long in case of a 64-bit system */
   pthread_attr_t attr;
-  pthread_t workerid[MAXWORKERS];
+  pthread_t workerid[MAX_WORKERS];
 
   /* set global thread attributes */
   pthread_attr_init(&attr);
@@ -79,10 +81,10 @@ int main(int argc, char *argv[]) {
   pthread_cond_init(&go, NULL);
 
   /* read command line args if any */
-  size = (argc > 1)? atoi(argv[1]) : MAXSIZE;
-  numWorkers = (argc > 2)? atoi(argv[2]) : MAXWORKERS;
-  if (size > MAXSIZE) size = MAXSIZE;
-  if (numWorkers > MAXWORKERS) numWorkers = MAXWORKERS;
+  size = (argc > 1)? atoi(argv[1]) : MAX_SIZE;
+  numWorkers = (argc > 2)? atoi(argv[2]) : MAX_WORKERS;
+  if (size > MAX_SIZE) size = MAX_SIZE;
+  if (numWorkers > MAX_WORKERS) numWorkers = MAX_WORKERS;
   stripSize = size/numWorkers;
 
   /* initialize the matrix */
@@ -91,17 +93,6 @@ int main(int argc, char *argv[]) {
           matrix[i][j] = 1;//rand()%99;
 	  }
   }
-
-  /* print the matrix */
-#ifdef DEBUG
-  for (i = 0; i < size; i++) {
-	  printf("[ ");
-	  for (j = 0; j < size; j++) {
-	    printf(" %d", matrix[i][j]);
-	  }
-	  printf(" ]\n");
-  }
-#endif
 
   /* do the parallel work: create the workers */
   start_time = read_timer();
@@ -115,10 +106,6 @@ int main(int argc, char *argv[]) {
 void *Worker(void *arg) {
   long myid = (long) arg;
   int total, i, j, first, last;
-
-#ifdef DEBUG
-  printf("worker %d (pthread id %d) has started\n", myid, pthread_self());
-#endif
 
   /* determine first and last rows of my strip */
   first = myid*stripSize;
