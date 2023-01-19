@@ -94,7 +94,7 @@ int main(int argc, char *argv[]) {
         printf("The total sum is: 0\n");
         return 0;
     }
-
+    
     // initialize matrix
     srand(time(NULL));
     for (int row = 0; row < size; row++) {
@@ -132,6 +132,7 @@ int main(int argc, char *argv[]) {
             final_res.max_row = res->max_row;
             final_res.max_col = res->max_col;
         } 
+        free(res);
     }    
 
     double end_time = read_timer();
@@ -139,10 +140,6 @@ int main(int argc, char *argv[]) {
     printf("The min value is: %d and its position is (%d, %d) \n", final_res.min_value, final_res.min_row, final_res.min_col);
     printf("The max value is: %d and its position is (%d, %d) \n", final_res.max_value, final_res.max_row, final_res.max_col);
     printf("The execution time is: %g sec\n", end_time - start_time);
-
-    for(int i = 0; i < num_workers; i++) {
-        free(res[i]);
-    }
 
     return 0;
 }
